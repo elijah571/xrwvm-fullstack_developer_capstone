@@ -30,10 +30,10 @@ jobs:
       - name: Run Linter
         run: |
           pwd
-          # Run flake8, ignore migrations and common warnings that fail CI
+          # Ignore migrations and common formatting issues
           flake8 . --exclude=server/djangoapp/migrations \
             --ignore=E501,W391,F401,F811,E302,E303
-          echo "Linted all the python files successfully"
+          echo "Python lint passed"
 
   lint_js:
     name: Lint JavaScript Files
@@ -52,5 +52,6 @@ jobs:
 
       - name: Run Linter
         run: |
-          find ./server/database -name "*.js" -exec jshint {} +
-          echo "Linted all the js files successfully"
+          # Use ES6/ES8 syntax support
+          find ./server/database -name "*.js" -exec jshint {} --esversion=8 \;
+          echo "JS lint passed"
