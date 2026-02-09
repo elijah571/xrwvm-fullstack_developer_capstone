@@ -1,65 +1,114 @@
-# Uncomment the required imports before adding the code
-
-# from django.shortcuts import render
-# from django.http import HttpResponseRedirect, HttpResponse
-# from django.contrib.auth.models import User
-# from django.shortcuts import get_object_or_404, render, redirect
-# from django.contrib.auth import logout
-# from django.contrib import messages
-# from datetime import datetime
-
-from django.http import JsonResponse
-from django.contrib.auth import login, authenticate
-import logging
 import json
+from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-# from .populate import initiate
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
+from .models import CarMake, CarModel, Dealer, Review
+from .populate import initiate_cars, initiate_dealers
 
 
-# Get an instance of a logger
-logger = logging.getLogger(__name__)
+# ---------------- AUTH ----------------
 
-
-# Create your views here.
-
-# Create a `login_request` view to handle sign in request
 @csrf_exempt
 def login_user(request):
-    # Get username and password from request.POST dictionary
-    data = json.loads(request.body)
-    username = data['userName']
-    password = data['password']
-    # Try to check if provide credential can be authenticated
-    user = authenticate(username=username, password=password)
-    data = {"userName": username}
-    if user is not None:
-        # If user is valid, call login method to login current user
+    if request.method == "POST":
+        data = json.loads(request.body)
+        username = data.get("userName")
+        password = data.get("password")
+
+        user = authenticate(username=username, password=password)
+        if user:
+            login(request, user)
+            return JsonResponse({"userName": username, "status": True})
+
+    return JsonResponse({"status": False})
+
+
+def logout_user(request):
+    logout(request)
+    return JsonResponse({"userName": ""})
+
+
+@csrf_exempt
+def register_user(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        username = data.get("userName")
+        password = data.get("password")
+
+        if User.objects.filter(username=username).exists():
+            return JsonResponse({"error": "Already Registered"})
+
+        user = User.objects.create_user(username=username, password=password)
         login(request, user)
-        data = {"userName": username, "status": "Authenticated"}
-    return JsonResponse(data)
+        return JsonResponse({"userName": username, "status": True})
 
-# Create a `logout_request` view to handle sign out request
-# def logout_request(request):
-# ...
 
-# Create a `registration` view to handle sign up request
-# @csrf_exempt
-# def registration(request):
-# ...
+# ---------------- CARS ----------------
 
-# # Update the `get_dealerships` view to render the index page with
-# a list of dealerships
-# def get_dealerships(request):
-# ...
+def get_cars(request):
+    initiate_cars()
+    cars = CarModel.objects.select_related("car_make")
 
-# Create a `get_dealer_reviews` view to render the reviews of a dealer
-# def get_dealer_reviews(request,dealer_id):
-# ...
+    data = [
+        {
+            "CarModel": car.name,
+            "CarMake": car.car_make.name,
+            "DealerID": car.dealer_id,
+            "Type": car.type,
+            "Year": car.year,
+        }
+        for car in cars
+    ]
 
-# Create a `get_dealer_details` view to render the dealer details
-# def get_dealer_details(request, dealer_id):
-# ...
+    return JsonResponse({"CarModels": data})
 
-# Create a `add_review` view to submit a review
-# def add_review(request):
-# ...
+
+# ---------------- DEALERS ----------------
+
+def get_dealers(request):
+    initiate_dealers()
+    dealers = Dealer.objects.all().values("id", "full_name", "city", "address", "zip", "state")
+    return JsonResponse({"status": 200, "dealers": list(dealers)})
+
+
+def get_dealers_by_state(request, state):
+    if state == "All":
+        dealers = Dealer.objects.all()
+    else:
+        dealers = Dealer.objects.filter(state=state)
+
+    dealers = dealers.values("id", "full_name", "city", "address", "zip", "state")
+    return JsonResponse({"status": 200, "dealers": list(dealers)})
+
+
+def get_dealer(request, id):
+    dealer = Dealer.objects.filter(id=id).values("id", "full_name", "city", "address", "zip", "state")
+    return JsonResponse({"status": 200, "dealer": list(dealer)})
+
+
+def get_reviews(request, id):
+    reviews = Review.objects.filter(dealership=id).values(
+        "name", "review", "car_make", "car_model", "car_year", "sentiment"
+    )
+    return JsonResponse({"status": 200, "reviews": list(reviews)})
+
+
+@csrf_exempt
+def add_review(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+
+        Review.objects.create(
+            name=data["name"],
+            dealership=data["dealership"],
+            review=data["review"],
+            car_make=data["car_make"],
+            car_model=data["car_model"],
+            car_year=data["car_year"],
+            sentiment="positive"
+        )
+
+        return JsonResponse({"status": 200})
+
+    return JsonResponse({"status": 400})
