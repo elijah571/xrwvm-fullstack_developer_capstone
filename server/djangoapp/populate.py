@@ -1,4 +1,21 @@
 from .models import CarMake, CarModel, Dealer, Review
+from datetime import date
+
+def initiate_dealers():
+    if Dealer.objects.exists():
+        return
+
+    dealers = [
+        {"id": 15, "full_name": "Dealer 15", "city": "Los Angeles", "address": "Street 1", "zip": "90001", "state": "California"},
+        {"id": 12, "full_name": "Dealer 12", "city": "Houston", "address": "Street 2", "zip": "77001", "state": "Texas"},
+        {"id": 10, "full_name": "Dealer 10", "city": "New York", "address": "Street 3", "zip": "10001", "state": "New York"},
+        {"id": 11, "full_name": "Dealer 11", "city": "Miami", "address": "Street 4", "zip": "33101", "state": "Florida"},
+        {"id": 9,  "full_name": "Dealer 9",  "city": "Las Vegas", "address": "Street 5", "zip": "88901", "state": "Nevada"},
+        {"id": 8,  "full_name": "Dealer 8",  "city": "Phoenix", "address": "Street 6", "zip": "85001", "state": "Arizona"},
+    ]
+
+    for d in dealers:
+        Dealer.objects.create(**d)
 
 
 def initiate_cars():
@@ -25,42 +42,28 @@ def initiate_cars():
         make_objects[name] = CarMake.objects.create(name=name, description=desc)
 
     for name, dealer_id, make_name, car_type, year in models:
+        dealer_obj = Dealer.objects.get(id=dealer_id)
         CarModel.objects.create(
             name=name,
-            dealer_id=dealer_id,
+            dealer=dealer_obj,
             car_make=make_objects[make_name],
             type=car_type,
             year=year
         )
 
 
-def initiate_dealers():
-    if Dealer.objects.exists():
-        return
-
-    dealers = [
-        {"full_name": "Dealer 15", "city": "Los Angeles", "address": "Street 1", "zip": "90001", "state": "California"},
-        {"full_name": "Dealer 12", "city": "Houston", "address": "Street 2", "zip": "77001", "state": "Texas"},
-        {"full_name": "Dealer 10", "city": "New York", "address": "Street 3", "zip": "10001", "state": "New York"},
-        {"full_name": "Dealer 11", "city": "Miami", "address": "Street 4", "zip": "33101", "state": "Florida"},
-        {"full_name": "Dealer 9", "city": "Las Vegas", "address": "Street 5", "zip": "88901", "state": "Nevada"},
-        {"full_name": "Dealer 8", "city": "Phoenix", "address": "Street 6", "zip": "85001", "state": "Arizona"},
-    ]
-
-    for d in dealers:
-        Dealer.objects.create(**d)
-
-
 def initiate_reviews():
     if Review.objects.exists():
         return
 
+    dealer_obj = Dealer.objects.get(id=15)
     Review.objects.create(
         name="John",
-        dealership=1,
+        dealership=dealer_obj,
         review="Great service!",
         car_make="Toyota",
         car_model="Corolla",
         car_year=2023,
-        sentiment="positive"
+        sentiment="positive",
+        purchase_date=date.today()
     )
