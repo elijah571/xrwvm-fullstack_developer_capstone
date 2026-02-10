@@ -27,7 +27,13 @@ SECRET_KEY = (
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "dealership.267055e652n7.us-south.codeengine.appdomain.cloud",
+    ".codeengine.appdomain.cloud",
+    "localhost",
+    "127.0.0.1",
+]
+
 CSRF_TRUSTED_ORIGINS = []
 
 REST_FRAMEWORK = {
